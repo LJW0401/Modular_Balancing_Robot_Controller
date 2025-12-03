@@ -182,8 +182,8 @@ void DataRcRenew()
 {
     Send_Data_Rc.time_stamp = HAL_GetTick();
 
-    memcpy(&Send_Data_Rc.data.rc_ctrl, get_remote_control_point(), sizeof(RC_ctrl_t));
-    Send_Data_Rc.data.rc_offline = GetRcOffline();
+    // memcpy(&Send_Data_Rc.data.rc_ctrl, get_remote_control_point(), sizeof(RC_ctrl_t));
+    Send_Data_Rc.data.rc_offline = GetSbusOffline();
     append_CRC16_check_sum((uint8_t *)(&Send_Data_Rc), sizeof(Data_Rc_s));
 }
 
@@ -227,8 +227,8 @@ void Uart2DataSolve(uint8_t * frame)
             LastReceiveTime.Data_Rc = HAL_GetTick();
 
 #if __CONTROL_LINK_RC == CL_RC_UART2
-            const RC_ctrl_t * rc_ctrl = get_remote_control_point();
-            memcpy((RC_ctrl_t *)rc_ctrl, &Receive_Data_Rc.data.rc_ctrl, sizeof(RC_ctrl_t));
+            // const RC_ctrl_t * rc_ctrl = get_remote_control_point();
+            // memcpy((RC_ctrl_t *)rc_ctrl, &Receive_Data_Rc.data.rc_ctrl, sizeof(RC_ctrl_t));
 #endif
         } break;
         case Uart2_Data_Gimbal_ID: {

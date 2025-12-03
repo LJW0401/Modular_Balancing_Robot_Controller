@@ -230,7 +230,7 @@ static void MusicPlay(void)
         if (HAL_GetTick() - last_abnormal_warning_time > ABNORMAL_WARNING_INTERVAL) {
             last_abnormal_warning_time = HAL_GetTick();
 
-            if (ENABLE_ALARM_RC_OFFLINE && GetRcOffline()) {  // 检测遥控器是否离线
+            if (ENABLE_ALARM_RC_OFFLINE && GetSbusOffline()) {  // 检测遥控器是否离线
                 fifo_s_put(&play_list_fifo, PLAY_RC_OFFLINE);
             }
             if (ENABLE_ALARM_MOTOR_OFFLINE && ScanOfflineMotor()) {  // 检测是否存在离线电机

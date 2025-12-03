@@ -15,8 +15,7 @@
 #include "IMU.h"
 #include "CAN_communication.h"
 
-const Sbus_t * SBUS;
-const RC_ctrl_t * RC_CTRL;
+const SBUS_t * SBUS;
 
 extern Ps2_s ps2;
 
@@ -29,7 +28,6 @@ void develop_task(void const * pvParameters)
     vTaskDelay(500);
 
     SBUS = get_sbus_point();
-    RC_CTRL = get_remote_control_point();
     
     SupCap_s p_sup_cap;
     SupCapInit(&p_sup_cap,1);

@@ -108,7 +108,8 @@ typedef struct
 
     struct
     {
-        RC_ctrl_t rc_ctrl;
+        uint16_t ch[16];
+        uint8_t connect_flag;
         bool rc_offline;
     } __attribute__((packed)) data;
 

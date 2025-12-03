@@ -15,7 +15,7 @@
 
 #include "gimbal_yaw_pitch_direct.h"
 #if (GIMBAL_TYPE == GIMBAL_YAW_PITCH_DIRECT)
-// Gimbal_s GIMBAL;
+Gimbal_s GIMBAL;
 
 /*--------------------------------Internal functions---------------------------------------*/
 

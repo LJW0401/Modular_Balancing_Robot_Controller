@@ -105,11 +105,9 @@ static SendDataBuff_s        SEND_BUFF_DATA;
 // 数据接收结构体
 static ReceiveDataRobotCmd_s RECEIVE_ROBOT_CMD_DATA;
 static ReceiveDataPidDebug_s RECEIVE_PID_DEBUG_DATA;
-static ReceiveDataVirtualRc_s RECEIVE_VIRTUAL_RC_DATA;
 
 // 机器人控制指令数据
 RobotCmdData_t ROBOT_CMD_DATA;
-static RC_ctrl_t VIRTUAL_RC_CTRL;
 
 // 发送数据间隔时间
 typedef struct
@@ -161,7 +159,6 @@ static void UsbSendBuffData(void);
 /*******************************************************************************/
 
 static void GetCmdData(void);
-static void GetVirtualRcCtrlData(void);
 
 /******************************************************************/
 /* Task                                                           */
@@ -176,7 +173,6 @@ void usb_task(void const * argument)
 {
     Publish(&ROBOT_CMD_DATA, ROBOT_CMD_DATA_NAME);
     Publish(&USB_OFFLINE, USB_OFFLINE_NAME);
-    Publish(&VIRTUAL_RC_CTRL, VIRTUAL_RC_NAME);
 
     MX_USB_DEVICE_Init();
 
@@ -187,7 +183,6 @@ void usb_task(void const * argument)
         UsbSendData();
         UsbReceiveData();
         GetCmdData();
-        GetVirtualRcCtrlData();
 
         if (HAL_GetTick() - RECEIVE_TIME > USB_OFFLINE_THRESHOLD) {
             USB_OFFLINE = true;
@@ -225,9 +220,7 @@ static void UsbInit(void)
     memset(&LAST_SEND_TIME, 0, sizeof(LastSendTime_t));
     memset(&RECEIVE_ROBOT_CMD_DATA, 0, sizeof(ReceiveDataRobotCmd_s));
     memset(&RECEIVE_PID_DEBUG_DATA, 0, sizeof(ReceiveDataPidDebug_s));
-    memset(&RECEIVE_VIRTUAL_RC_DATA, 0, sizeof(ReceiveDataVirtualRc_s));
     memset(&ROBOT_CMD_DATA, 0, sizeof(RobotCmdData_t));
-    memset(&VIRTUAL_RC_CTRL, 0, sizeof(RC_ctrl_t));
 
     /*******************************************************************************/
     /* Serial                                                                     */
@@ -423,10 +416,6 @@ static void UsbReceiveData(void)
                     } break;
                     case PID_DEBUG_DATA_RECEIVE_ID: {
                         memcpy(&RECEIVE_PID_DEBUG_DATA, sof_address, sizeof(ReceiveDataPidDebug_s));
-                    } break;
-                    case VIRTUAL_RC_DATA_RECEIVE_ID: {
-                        memcpy(
-                            &RECEIVE_VIRTUAL_RC_DATA, sof_address, sizeof(ReceiveDataVirtualRc_s));
                     } break;
                     default:
                         break;
@@ -667,11 +656,6 @@ static void GetCmdData(void)
 
     ROBOT_CMD_DATA.shoot.fire = RECEIVE_ROBOT_CMD_DATA.data.shoot.fire;
     ROBOT_CMD_DATA.shoot.fric_on = RECEIVE_ROBOT_CMD_DATA.data.shoot.fric_on;
-}
-
-static void GetVirtualRcCtrlData(void)
-{
-    memcpy(&VIRTUAL_RC_CTRL, &RECEIVE_VIRTUAL_RC_DATA.data, sizeof(RC_ctrl_t));
 }
 
 /*******************************************************************************/
