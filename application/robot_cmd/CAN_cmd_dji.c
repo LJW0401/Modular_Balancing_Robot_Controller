@@ -120,7 +120,7 @@ void CanCmdDjiMotor(
  * @return         none
  * @warning        注意限制电机设定值的范围
  */
-void DjiMultipleControl(uint8_t can, uint8_t motor_num, Motor_s * motor_array)
+void DjiMultipleControl(uint8_t can, uint8_t motor_num, Motor_s ** motor_array)
 {
     hcan_t * hcan = NULL;
     if (can == 1)
@@ -134,32 +134,32 @@ void DjiMultipleControl(uint8_t can, uint8_t motor_num, Motor_s * motor_array)
     uint8_t motor_id_index = 0;
 
     for (uint8_t i = 0; i < motor_num; i++) {
-        motor_id_index = (motor_array[i].id - 1) % 4;  // 计算电机id对应的索引
+        motor_id_index = (motor_array[i]->id - 1) % 4;  // 计算电机id对应的索引
 
-        switch (motor_array[i].type) {
+        switch (motor_array[i]->type) {
             case DJI_M2006:
             case DJI_M3508: {
-                if (motor_array[i].id > 8) {  // 2006和3508电机id最大为8
+                if (motor_array[i]->id > 8) {  // 2006和3508电机id最大为8
                     continue;
                 }
-                if (motor_array[i].mode == DJI_CURRENT_MODE) {
-                    std_id_index = (motor_array[i].id - 1) / 4;  // 计算std_id对应的索引
+                if (motor_array[i]->mode == DJI_CURRENT_MODE) {
+                    std_id_index = (motor_array[i]->id - 1) / 4;  // 计算std_id对应的索引
 
-                    cmd_value[std_id_index][motor_id_index] = motor_array[i].set.value;
+                    cmd_value[std_id_index][motor_id_index] = motor_array[i]->set.value;
 
                     using_flag[std_id_index] = true;
                 }
             } break;
             case DJI_M6020: {
-                if (motor_array[i].id > 7) {  // 6020电机id最大为7
+                if (motor_array[i]->id > 7) {  // 6020电机id最大为7
                     continue;
                 }
-                if (motor_array[i].mode == DJI_CURRENT_MODE) {
+                if (motor_array[i]->mode == DJI_CURRENT_MODE) {
                     ;
-                } else if (motor_array[i].mode == DJI_VOLTAGE_MODE) {
-                    std_id_index = 1 + (motor_array[i].id - 1) / 4;  // 计算std_id对应的索引
+                } else if (motor_array[i]->mode == DJI_VOLTAGE_MODE) {
+                    std_id_index = 1 + (motor_array[i]->id - 1) / 4;  // 计算std_id对应的索引
 
-                    cmd_value[std_id_index][motor_id_index] = motor_array[i].set.value;
+                    cmd_value[std_id_index][motor_id_index] = motor_array[i]->set.value;
 
                     using_flag[std_id_index] = true;
                 }
