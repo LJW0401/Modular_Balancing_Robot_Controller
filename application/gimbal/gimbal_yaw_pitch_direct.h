@@ -21,76 +21,88 @@
 #if (GIMBAL_TYPE == GIMBAL_YAW_PITCH_DIRECT)
 #ifndef GIMBAL_YAW_PITCH_H
 #define GIMBAL_YAW_PITCH_H
-#include "IMU.h"//陀螺仪文件
+#include "CAN_cmd_dji.h"
+#include "CAN_receive.h"
+#include "IMU.h"  //陀螺仪文件
+#include "cmsis_os.h"
+#include "detect_task.h"
 #include "gimbal.h"
+#include "macro_typedef.h"
+#include "math.h"
 #include "motor.h"
 #include "pid.h"
 #include "remote_control.h"
 #include "robot_param.h"
 #include "struct_typedef.h"
-#include  "user_lib.h"
-#include "CAN_cmd_dji.h"
-#include "detect_task.h"
-#include "usb_debug.h"
-#include "cmsis_os.h"
-#include "CAN_receive.h"
-#include "math.h"
-#include "macro_typedef.h"
 #include "supervisory_computer_cmd.h"
-
+#include "usb_debug.h"
+#include "user_lib.h"
 
 /**
  * @brief 云台模式
  */
 typedef enum {
-    GIMBAL_ZERO_FORCE,  // 云台无力，所有控制量置0
-    GIMBAL_IMU,         // 云台陀螺仪控制(角度控制)
-    GIMBAL_INIT,        //云台矫正模式
-    GIMBAL_DBUS_ERR,    //遥控器断联相关处理任务
-    GIMBAL_GAP,         //跳出矫正进入IMU/AUTO_AIM模式之前的存储数据模式
-    GIMBAL_AUTO_AIM,    //自瞄模式
+    GIMBAL_OFF = 0,  // 关闭，给所有电机发送关闭指令
+    GIMBAL_SAFE,     // 云台安全，所有控制量置0
+    GIMBAL_IMU,      // 云台陀螺仪控制(角度控制)
+    GIMBAL_ECD,      // 云台电机角度控制
 } GimbalMode_e;
 
-
-/**
- * @brief 状态、期望和限制值
- */
 typedef struct
 {
-    float pitch;
-    float yaw;
-} Values_t;
-
-typedef struct
-{
-    pid_type_def yaw_angle;
-    pid_type_def yaw_velocity;  //角速度
-
-    pid_type_def pitch_angle;
-    pid_type_def pitch_velocity;
-    
-} PID_t;
-
-typedef struct
-{
-    const RC_ctrl_t * rc;  // 遥控器指针
-    GimbalMode_e mode,last_mode,mode_before_rc_err;  // 模式
+    GimbalMode_e mode, last_mode;  // 模式
 
     /*-------------------- Motors --------------------*/
-    Motor_s yaw,pitch;
+    Motor_s m_yaw, m_pit;
     /*-------------------- Values --------------------*/
-    Values_t reference;    // 期望值
-    Values_t feedback_pos,feedback_vel;     // 状态值(目前专供给IMU数据)
-    Values_t upper_limit;  // 上限值
-    Values_t lower_limit;  // 下限值
+    struct
+    {
+        struct
+        {
+            float pos;  // (rad) 云台yaw位置
+            float vel;  // (rad/s) 云台yaw速度
+        } rol, pit, yaw;
+    } fdb;  // 状态量
 
-    PID_t pid;  // PID控制器
+    struct
+    {
+        struct
+        {
+            float pos;  // (rad) 云台yaw位置
+            float vel;  // (rad/s) 云台yaw速度
+        } rol, pit, yaw;
+    } ref;  // 期望量
 
-    float angle_zero_for_imu; //pitch电机处于中值时imupitch的角度
+    struct
+    {
+        struct
+        {
+            float pos;    // (rad) 位置
+            float vel;    // (rad/s) 速度
+            float tor;    // (N*m) 力矩
+            float cur;    // (A) 电流
+            float value;  // 直接控制量，无单位
+        } rol, pit, yaw;
+    } cmd;  // 控制量
 
-    uint32_t init_start_time,init_timer;
+    struct
+    {
+        struct
+        {
+            struct
+            {
+                float pos
+            } rol, pit, yaw;
+        } upper, lower, middle;
+    } limit;
 
-    bool init_continue; //是否继续进行校准模式
+    struct
+    {
+        struct
+        {
+            pid_type_def pos, vel;
+        } rol, pit, yaw;
+    } pid;
 } Gimbal_s;
 
 extern void GimbalInit(void);
