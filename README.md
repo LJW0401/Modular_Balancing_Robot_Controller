@@ -1,40 +1,25 @@
-# StandardRobot++
+# Modular Balancing Robot Controller (Base on STM32F4)
 
 <div align=center>
 
 ![Logo](./doc/pic/Logo6.png)
 
-[![Author](https://img.shields.io/badge/Author-小企鹅-orange.svg)](https://gitee.com/Ljw0401)
-[![Maintainer](https://img.shields.io/badge/Maintainer-YZX-orange.svg)](https://gitee.com/yuan-zaixiu)
-[![Collaborator](https://img.shields.io/badge/Collaborator-WHR-orange.svg)](https://gitee.com/Harry_Wong)
-[![Collaborator](https://img.shields.io/badge/Collaborator-furrry-orange.svg)](https://gitee.com/furrry)
-
 ![language](https://img.shields.io/badge/language-C-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
-
-[![commit](https://svg.hamm.cn/gitee.svg?user=SMBU-POLARBEAR&project=StandardRobotpp&type=commit)](https://gitee.com/SMBU-POLARBEAR/StandardRobotpp)
-[![fork](https://gitee.com/SMBU-POLARBEAR/StandardRobotpp/badge/fork.svg?theme=dark)](https://gitee.com/SMBU-POLARBEAR/StandardRobotpp)
-[![star](https://gitee.com/SMBU-POLARBEAR/StandardRobotpp/badge/star.svg?theme=dark)](https://gitee.com/SMBU-POLARBEAR/StandardRobotpp)
-[![release](https://svg.hamm.cn/gitee.svg?user=SMBU-POLARBEAR&project=StandardRobotpp&type=release)](https://gitee.com/SMBU-POLARBEAR/StandardRobotpp)
 
 </div>
 
 ## 简介
 
-> 也许不是最好的？但一定是最适合上手的C板电控框架！
-
-本项目的计划是基于 DJI StandardRobot 的基础上改造成一个更适合北极熊uu们的通用型机器人代码框架。
-
-本框架致力于实现不同类型的机器人的代码通用化，只需要选择底盘云台的类型，修改一下对应物理参数即可实现对机器人的适配。
+基于 深圳北理莫斯科大学 北极熊战队 的统一嵌入式代码 `StandardRobot++` 修改的`模块化轮腿控制器`。旨在基于一个轮腿底盘，模块化的更换其他组件实现不同任务模块的并网，一机多用。
 
 ## 配套套件
 
-- [StandardRobot++ Tool](https://gitee.com/SMBU-POLARBEAR/Serial_Port_Assistant) 上位机调试工具，可用于可视化查看机器人状态及相关参数，便于调试。
-- [ROS2_StandardRobot++](https://gitee.com/SMBU-POLARBEAR/ROS2_StandardRobotpp) ROS2驱动包，可用于实现上位机对机器人的控制。
+- [StandardRobot++ Tool](https://gitee.com/SMBU-POLARBEAR/Serial_Port_Assistant) `(后期开新仓库精简功能，更加适配本项目)`上位机调试工具，可用于可视化查看机器人状态及相关参数，便于调试。
+- [ROS2_StandardRobot++](https://gitee.com/SMBU-POLARBEAR/ROS2_StandardRobotpp) `(后期开新仓库优化功能，更加适配本项目，实现下位机和上位机的高效协同)`ROS2驱动包，可用于实现上位机对机器人的控制。
+- [IMU_Controller](https://github.com/LJW0401/IMU_Controller) 一个简易的体感控制器，通过头追和姿态追踪实现对本机器人的控制。
 
 ## 模块支持
-
-详细信息请参考 [StandardRobot++ 框架](./doc/framework.md)
 
 ### 主要模块
 
@@ -49,26 +34,16 @@
   - [x] PWM 控制舵机
   - [x] PWM 控制气泵
 - **Chassis**\
-  底盘模块：
-  - [x] 麦轮底盘
-  - [x] 全向轮底盘
-  - [ ] 舵轮底盘
-  - [x] 平衡底盘
+  - [ ] 平衡底盘
 - **Gimbal**\
   云台模块：
   - [x] yaw-pitch 直连云台
-  - [ ] yaw直连-pitch丝杆 云台
-  - [ ] yaw-pitch 丝杆云台
 - **Shoot**\
   发射机构模块：
-  - [x] 摩擦轮+拨弹盘
-  - [ ] 摩擦轮+弹鼓+推杆
+  - [ ] 摩擦轮+拨弹盘
 - **Mechanical arm**\
   机械臂模块：
-  - [x] 六自由度直驱机械臂（末端差速）
-- **Custom Controller**\
-  自定义控制器模块：
-  - [x] 六自由度直驱机械臂配套自定义控制器（末端差速）
+  - [ ] 六自由度机械臂
 - **Communication**\
   通信模块：
   - [x] 板间通信(4pin uart2)
@@ -96,27 +71,9 @@
 
 `.vscode` 文件夹已经提供了很多非常好用的插件，在`扩展`页面输入 `@recommended` 即可获取这些插件，点击安装即可。
 
-## 欢迎贡献
-
-如果你发现了本项目中的问题和可优化的点，可用创建issue进行讨论。
-
-并且fork本项目后提交pr来贡献你的代码。
-
-我们的管理员审核后会将你的代码合并进来。
-
-> ***贡献代码时请参照 [注意事项](./doc/注意事项.md/#贡献代码) 中的贡献代码部分。***
->
-> 编写代码时参考[API](./doc/API.md)
-
 ## 开发日志
 
 [LOG.md](./doc/LOG.md) 记录了大家在开发过程中的各种奇思妙想和经验。多翻一翻或许能发现惊喜哦。大家有什么想法也都可以往里面写。
-
-[API.md](./doc/API.md) 为开发过程中所使用的模块接口标准，若在编写代码时发现代码与标准冲突，基于本标准修改代码。
-
-## 后续计划
-
-具体要做的事情在[TODO](./doc/TODO.md)中
 
 ## 致谢
 
@@ -125,8 +82,6 @@
 ## 附录
 
 本文的详细补充内容写在 [附录](./doc/appendix.md) 中。
-
-如发现本项目中的问题，请添加至[问题列表](./doc/questions.md)并与相关负责人联系，如果有解决方案可以提交pull request。
 
 ## 通讯信息
 
