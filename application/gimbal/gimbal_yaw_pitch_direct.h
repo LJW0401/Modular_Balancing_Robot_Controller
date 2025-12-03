@@ -91,7 +91,7 @@ typedef struct
         {
             struct
             {
-                float pos
+                float pos;
             } rol, pit, yaw;
         } upper, lower, middle;
     } limit;
