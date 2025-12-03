@@ -51,8 +51,9 @@
 extern UART_HandleTypeDef huart3;
 extern DMA_HandleTypeDef hdma_usart3_rx;
 
-// 处理遥控器数据
 static void SolveSbusData(volatile const uint8_t * sbus_buf, SBUS_t * sbus);
+
+static void CheckRcType(void);
 
 // SBUS数据
 static SBUS_t SBUS = {.connect_flag = 0xFF};
@@ -173,8 +174,28 @@ static void SolveSbusData(volatile const uint8_t * sbus_buf, SBUS_t * sbus)
     sbus->connect_flag = sbus_buf[23];
     // clang-format on
 
+    // 检查遥控器类型
+    CheckRcType();
+
     // 记录数据接收时间
     last_receive_time = HAL_GetTick();
+}
+
+static void CheckRcType()
+{
+    switch (SBUS.connect_flag) {
+        case ET08A_RC_CONNECTED_FLAG: {
+            rc_type = RC_TYPE_ET08A;
+        } break;
+
+        case ESP32_TRACKER_CONNECTED_FLAG: {
+            rc_type = RC_TYPE_ESP32_TRACKER;
+        } break;
+
+        default: {
+            rc_type = RC_TYPE_UNKNOW;
+        } break;
+    }
 }
 
 /******************************************************************/
@@ -194,9 +215,11 @@ static void SolveSbusData(volatile const uint8_t * sbus_buf, SBUS_t * sbus)
   */
 inline bool GetSbusOffline(void)
 {
+    uint32_t now = HAL_GetTick();
+
 #if __CONTROL_LINK_RC == CL_RC_DIRECT
-    return ((HAL_GetTick() - last_receive_time < RC_LOST_TIME) && (HAL_GetTick() > RC_LOST_TIME)) ||
-           (!SBUS.connect_flag);
+    return ((now - last_receive_time > RC_LOST_TIME) && (now < RC_LOST_TIME)) ||
+           (!rc_type);
 #elif __CONTROL_LINK_RC == CL_RC_UART2
     return GetUartRcOffline();
 #else
