@@ -59,8 +59,9 @@ typedef struct
     {
         struct
         {
-            float pos;  // (rad) 云台yaw位置
-            float vel;  // (rad/s) 云台yaw速度
+            float m_pos;  // (rad) 电机位置
+            float pos;    // (rad) 云台yaw位置
+            float vel;    // (rad/s) 云台yaw速度
         } rol, pit, yaw;
     } fdb;  // 状态量
 
@@ -91,10 +92,14 @@ typedef struct
         {
             struct
             {
-                float pos;
-            } rol, pit, yaw;
+                float rol, pit, yaw;
+            } motor;
+            struct
+            {
+                float rol, pit, yaw;
+            } imu;
         } upper, lower, middle;
-    } limit;
+    } limit;  // 限制值
 
     struct
     {

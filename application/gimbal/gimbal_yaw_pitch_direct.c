@@ -14,7 +14,14 @@
 **/
 
 #include "gimbal_yaw_pitch_direct.h"
+
+#include "string.h"
+
 #if (GIMBAL_TYPE == GIMBAL_YAW_PITCH_DIRECT)
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 Gimbal_s GIMBAL;
 
 /*--------------------------------Internal functions---------------------------------------*/
@@ -28,7 +35,55 @@ Gimbal_s GIMBAL;
  */
 void GimbalInit(void)
 {
+    GIMBAL.mode = GIMBAL_SAFE;
+    GIMBAL.last_mode = GIMBAL_SAFE;
 
+    // 电机初始化
+    MotorInit(
+        &GIMBAL.m_pit, MOTOR_GIMBAL_PIT_ID, MOTOR_GIMBAL_PIT_CAN, MOTOR_GIMBAL_PIT_TYPE,
+        MOTOR_GIMBAL_PIT_DIRECTION, MOTOR_GIMBAL_PIT_REDUCTION_RATIO, MOTOR_GIMBAL_PIT_MODE);
+    MotorInit(
+        &GIMBAL.m_yaw, MOTOR_GIMBAL_YAW_ID, MOTOR_GIMBAL_YAW_CAN, MOTOR_GIMBAL_YAW_TYPE,
+        MOTOR_GIMBAL_YAW_DIRECTION, MOTOR_GIMBAL_YAW_REDUCTION_RATIO, MOTOR_GIMBAL_YAW_MODE);
+
+    // 状态量初始化
+    memset(&GIMBAL.fdb, 0, sizeof(GIMBAL.fdb));
+    // 目标量初始化
+    memset(&GIMBAL.ref, 0, sizeof(GIMBAL.ref));
+    // 控制量初始化
+    memset(&GIMBAL.cmd, 0, sizeof(GIMBAL.cmd));
+
+    //限制值初始化
+    GIMBAL.limit.middle.motor.pit = GIMBAL_MIDDLE_LIMIT_PIT_POS;
+    if (GIMBAL_UPPER_LIMIT_PIT_POS > GIMBAL_MIDDLE_LIMIT_PIT_POS) {
+        GIMBAL.limit.upper.motor.pit = GIMBAL_UPPER_LIMIT_PIT_POS;
+    } else {
+        GIMBAL.limit.upper.motor.pit = GIMBAL_UPPER_LIMIT_PIT_POS + 2.0f * M_PI;
+    }
+    if (GIMBAL_LOWER_LIMIT_PIT_POS < GIMBAL_MIDDLE_LIMIT_PIT_POS) {
+        GIMBAL.limit.lower.motor.pit = GIMBAL_LOWER_LIMIT_PIT_POS;
+    } else {
+        GIMBAL.limit.lower.motor.pit = GIMBAL_LOWER_LIMIT_PIT_POS - 2.0f * M_PI;
+    }
+
+    // PID参数初始化
+    float pit_pos_pid[3] = {GIMBAL_PID_PIT_POS_KP, GIMBAL_PID_PIT_POS_KI, GIMBAL_PID_PIT_POS_KD};
+    PID_init(
+        &GIMBAL.pid.pit.pos, PID_POSITION, pit_pos_pid, GIMBAL_PID_PIT_POS_MAX_OUT,
+        GIMBAL_PID_PIT_POS_MAX_IOUT);
+    float pit_vel_pid[3] = {GIMBAL_PID_PIT_VEL_KP, GIMBAL_PID_PIT_VEL_KI, GIMBAL_PID_PIT_VEL_KD};
+    PID_init(
+        &GIMBAL.pid.pit.vel, PID_POSITION, pit_vel_pid, GIMBAL_PID_PIT_VEL_MAX_OUT,
+        GIMBAL_PID_PIT_VEL_MAX_IOUT);
+
+    float yaw_pid[3] = {GIMBAL_PID_YAW_POS_KP, GIMBAL_PID_YAW_POS_KI, GIMBAL_PID_YAW_POS_KD};
+    PID_init(
+        &GIMBAL.pid.yaw.pos, PID_POSITION, yaw_pid, GIMBAL_PID_YAW_POS_MAX_OUT,
+        GIMBAL_PID_YAW_POS_MAX_IOUT);
+    float yaw_vel_pid[3] = {GIMBAL_PID_YAW_VEL_KP, GIMBAL_PID_YAW_VEL_KI, GIMBAL_PID_YAW_VEL_KD};
+    PID_init(
+        &GIMBAL.pid.yaw.vel, PID_POSITION, yaw_vel_pid, GIMBAL_PID_YAW_VEL_MAX_OUT,
+        GIMBAL_PID_YAW_VEL_MAX_IOUT);
 }
 /*-------------------- Set mode --------------------*/
 
@@ -39,7 +94,13 @@ void GimbalInit(void)
  */
 void GimbalSetMode(void)
 {
+    GIMBAL.last_mode = GIMBAL.mode;
+    if (GetSbusOffline()) {
+        GIMBAL.mode = GIMBAL_SAFE;
+        return;
+    }
 
+    GIMBAL.mode = GIMBAL_IMU;
 }
 /*-------------------- Observe --------------------*/
 
@@ -50,7 +111,29 @@ void GimbalSetMode(void)
  */
 void GimbalObserver(void)
 {
+    // 电机位置更新
+    GetMotorMeasure(&GIMBAL.m_pit);
+    GetMotorMeasure(&GIMBAL.m_yaw);
 
+    GIMBAL.fdb.pit.m_pos = GIMBAL.m_pit.fdb.pos * GIMBAL.m_pit.direction;
+    GIMBAL.fdb.yaw.m_pos = GIMBAL.m_yaw.fdb.pos * GIMBAL.m_pit.direction;
+
+    // IMU角度与速度更新
+    GIMBAL.fdb.pit.pos = GetImuAngle(AX_PITCH);
+    GIMBAL.fdb.pit.vel = GetImuVelocity(AX_PITCH);
+
+    GIMBAL.fdb.yaw.pos = GetImuAngle(AX_YAW);
+    GIMBAL.fdb.yaw.vel = GetImuVelocity(AX_YAW);
+
+    // IMU限制范围更新
+    // pitch轴
+    float upper_delta = GIMBAL.limit.upper.motor.pit - GIMBAL.fdb.pit.m_pos;
+    float lower_delta = GIMBAL.limit.lower.motor.pit - GIMBAL.fdb.pit.m_pos;
+    GIMBAL.limit.upper.imu.pit = upper_delta + GIMBAL.fdb.pit.pos;
+    GIMBAL.limit.lower.imu.pit = lower_delta + GIMBAL.fdb.pit.pos;
+
+    GIMBAL.limit.upper.imu.pit = MIN(GIMBAL.limit.upper.imu.pit, M_PI_2 * 0.9f);
+    GIMBAL.limit.lower.imu.pit = MAX(GIMBAL.limit.lower.imu.pit, -M_PI_2 * 0.9f);
 }
 
 /*-------------------- Reference --------------------*/
@@ -60,10 +143,7 @@ void GimbalObserver(void)
  * @param[in]      none
  * @retval         none
  */
-void GimbalReference(void)
-{
-
-}
+void GimbalReference(void) {}
 
 /*-------------------- Console --------------------*/
 
@@ -72,10 +152,7 @@ void GimbalReference(void)
  * @param[in]      none
  * @retval         none
  */
-void GimbalConsole(void)
-{
-
-}
+void GimbalConsole(void) {}
 
 /*-------------------- Cmd --------------------*/
 
@@ -84,9 +161,6 @@ void GimbalConsole(void)
  * @param[in]      none
  * @retval         none
  */
-void GimbalSendCmd(void)
-{
-
-}
+void GimbalSendCmd(void) {}
 
 #endif  // GIMBAL_YAW_PITCH

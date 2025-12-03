@@ -19,79 +19,60 @@
 /*******************************************************************************/
 /* Gimbal                                                                      */
 /*******************************************************************************/
-//gimbal_init-------------------------------
-#define GIMBAL_INIT_TIME (uint32_t)1000
+// 云台ROL电机参数
+// #define MOTOR_GIMBAL_ROL_ID               ((uint8_t)2)
+// #define MOTOR_GIMBAL_ROL_CAN              ((uint8_t)1)
+// #define MOTOR_GIMBAL_ROL_TYPE             ((MotorType_e)DJI_M6020)
+// #define MOTOR_GIMBAL_ROL_DIRECTION        (1)
+// #define MOTOR_GIMBAL_ROL_REDUCTION_RATIO  (1)
+// #define MOTOR_GIMBAL_ROL_MODE             (DJI_VOLTAGE_MODE)
 
-// gimbal can
-#define GIMBAL_CAN 1
-#define GIMBAL_STDID 0x1FF
+// 云台PIT电机参数
+#define MOTOR_GIMBAL_PIT_ID               ((uint8_t)2)
+#define MOTOR_GIMBAL_PIT_CAN              ((uint8_t)1)
+#define MOTOR_GIMBAL_PIT_TYPE             ((MotorType_e)DJI_M6020)
+#define MOTOR_GIMBAL_PIT_DIRECTION        (1)
+#define MOTOR_GIMBAL_PIT_REDUCTION_RATIO  (1)
+#define MOTOR_GIMBAL_PIT_MODE             (DJI_VOLTAGE_MODE)
 
-//mouse sensitivity ---------------------
-#define MOUSE_SENSITIVITY (0.5f)
+// 云台YAW电机参数
+#define MOTOR_GIMBAL_YAW_ID               ((uint8_t)1)
+#define MOTOR_GIMBAL_YAW_CAN              ((uint8_t)1)
+#define MOTOR_GIMBAL_YAW_TYPE             ((MotorType_e)DJI_M6020)
+#define MOTOR_GIMBAL_YAW_DIRECTION        (1)
+#define MOTOR_GIMBAL_YAW_REDUCTION_RATIO  (1)
+#define MOTOR_GIMBAL_YAW_MODE             (DJI_VOLTAGE_MODE)
 
-//remote controller sensitivity ---------------------
-#define REMOTE_CONTROLLER_SENSITIVITY  ( 100000.0f)
-#define REMOTE_CONTROLLER_MAX_DEADLINE ( 20.0f)
-#define REMOTE_CONTROLLER_MIN_DEADLINE (-20.0f)
-//motor parameters ---------------------
-//电机id
-#define GIMBAL_DIRECT_YAW_ID   ((uint8_t)1)
-#define GIMBAL_DIRECT_PITCH_ID ((uint8_t)2)
+// 云台位置限制参数
+#define GIMBAL_UPPER_LIMIT_PIT_POS    (-1.609145879f)    // 云台PIT上限位置(rad)
+#define GIMBAL_MIDDLE_LIMIT_PIT_POS   (-2.063708757f)    // 云台PIT中间位置(rad)
+#define GIMBAL_LOWER_LIMIT_PIT_POS    (-2.806417942f)   // 云台PIT下限位置(rad)
 
-//电机can口
-#define GIMBAL_DIRECT_YAW_CAN   ((uint8_t)1)
-#define GIMBAL_DIRECT_PITCH_CAN ((uint8_t)1)
-
-//电机种类
-#define GIMBAL_DIRECT_YAW_MOTOR_TYPE   ((MotorType_e)DJI_M6020)
-#define GIMBAL_DIRECT_PITCH_MOTOR_TYPE ((MotorType_e)DJI_M6020)
-
-//旋转方向
-#define GIMBAL_DIRECT_YAW_DIRECTION   ( 1)
-#define GIMBAL_DIRECT_PITCH_DIRECTION ( 1)
-
-//减速比
-#define GIMBAL_DIRECT_YAW_REDUCTION_RATIO   (1)
-#define GIMBAL_DIRECT_PITCH_REDUCTION_RATIO (1)
-
-//电机运行模式
-#define GIMBAL_DIRECT_YAW_MODE   (DJI_VOLTAGE_MODE)
-#define GIMBAL_DIRECT_PITCH_MODE (DJI_VOLTAGE_MODE)
-
-//physical parameters ---------------------
-#define GIMBAL_UPPER_LIMIT_PITCH ( 0.41f)
-#define GIMBAL_LOWER_LIMIT_PITCH (-0.70f)
-
-//电机角度中值设置
-#define GIMBAL_DIRECT_PITCH_MID (-2.08f)  //云台初始化正对齐的时候使用的pitch轴正中心量
-#define GIMBAL_DIRECT_YAW_MID   ( 1.30f)     //云台初始化正对齐的时候使用的yaw轴正中心量
-
-//PID parameters ---------------------
-//YAW ANGLE
-#define KP_GIMBAL_YAW_ANGLE       (28.0f)
-#define KI_GIMBAL_YAW_ANGLE       (0.0f)
-#define KD_GIMBAL_YAW_ANGLE       (10.0f)
-#define MAX_IOUT_GIMBAL_YAW_ANGLE (0.0f)
-#define MAX_OUT_GIMBAL_YAW_ANGLE  (20.0f)
-//VELOCITY:角速度
-#define KP_GIMBAL_YAW_VELOCITY       (5000.0f)
-#define KI_GIMBAL_YAW_VELOCITY       (10.0f)
-#define KD_GIMBAL_YAW_VELOCITY       (0.0f)
-#define MAX_IOUT_GIMBAL_YAW_VELOCITY (2000.0f)
-#define MAX_OUT_GIMBAL_YAW_VELOCITY  (25000.0f)
-
-//PITCH ANGLE
-#define KP_GIMBAL_PITCH_ANGLE       (30.0f)
-#define KI_GIMBAL_PITCH_ANGLE       (0.0f)
-#define KD_GIMBAL_PITCH_ANGLE       (10.0f)
-#define MAX_IOUT_GIMBAL_PITCH_ANGLE (0.0f)
-#define MAX_OUT_GIMBAL_PITCH_ANGLE  (20.0f)
-//VELOCITY:角速度
-#define KP_GIMBAL_PITCH_VELOCITY       (5000.0f)
-#define KI_GIMBAL_PITCH_VELOCITY       (15.0f)
-#define KD_GIMBAL_PITCH_VELOCITY       (0.0f)
-#define MAX_IOUT_GIMBAL_PITCH_VELOCITY (3000.0f)
-#define MAX_OUT_GIMBAL_PITCH_VELOCITY  (25000.0f)
+// 云台PID参数
+// PIT位置环
+#define GIMBAL_PID_PIT_POS_KP      150.0f
+#define GIMBAL_PID_PIT_POS_KI      0.0f
+#define GIMBAL_PID_PIT_POS_KD      5.0f
+#define GIMBAL_PID_PIT_POS_MAX_IOUT  1000.0f
+#define GIMBAL_PID_PIT_POS_MAX_OUT   10000.0f
+// PIT速度环
+#define GIMBAL_PID_PIT_VEL_KP      20.0f
+#define GIMBAL_PID_PIT_VEL_KI      0.0f
+#define GIMBAL_PID_PIT_VEL_KD      0.0f
+#define GIMBAL_PID_PIT_VEL_MAX_IOUT  1000.0f
+#define GIMBAL_PID_PIT_VEL_MAX_OUT   5000.0f
+// YAW位置环
+#define GIMBAL_PID_YAW_POS_KP      150.0f
+#define GIMBAL_PID_YAW_POS_KI      0.0f
+#define GIMBAL_PID_YAW_POS_KD      5.0f
+#define GIMBAL_PID_YAW_POS_MAX_IOUT  1000.0f
+#define GIMBAL_PID_YAW_POS_MAX_OUT   10000.0f
+// YAW速度环
+#define GIMBAL_PID_YAW_VEL_KP      20.0f
+#define GIMBAL_PID_YAW_VEL_KI      0.0f
+#define GIMBAL_PID_YAW_VEL_KD      0.0f
+#define GIMBAL_PID_YAW_VEL_MAX_IOUT  1000.0f
+#define GIMBAL_PID_YAW_VEL_MAX_OUT   5000.0f
 
 // clang-format on
 #endif /* INCLUDED_ROBOT_PARAM_H */
