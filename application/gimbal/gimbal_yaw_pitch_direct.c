@@ -15,12 +15,19 @@
 
 #include "gimbal_yaw_pitch_direct.h"
 
+#include "remote_control.h"
+#include "signal_generator.h"
 #include "string.h"
 
 #if (GIMBAL_TYPE == GIMBAL_YAW_PITCH_DIRECT)
 
+#define TUNE_MODE true
+
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MID(a, b, c) (MAX(MIN(MAX(a, b), c), MIN(a, b)))
+
+#define PITCH_MAX (M_PI_2 * 0.9f)
 
 Gimbal_s GIMBAL;
 
@@ -132,8 +139,8 @@ void GimbalObserver(void)
     GIMBAL.limit.upper.imu.pit = upper_delta + GIMBAL.fdb.pit.pos;
     GIMBAL.limit.lower.imu.pit = lower_delta + GIMBAL.fdb.pit.pos;
 
-    GIMBAL.limit.upper.imu.pit = MIN(GIMBAL.limit.upper.imu.pit, M_PI_2 * 0.9f);
-    GIMBAL.limit.lower.imu.pit = MAX(GIMBAL.limit.lower.imu.pit, -M_PI_2 * 0.9f);
+    GIMBAL.limit.upper.imu.pit = MIN(GIMBAL.limit.upper.imu.pit, PITCH_MAX);
+    GIMBAL.limit.lower.imu.pit = MAX(GIMBAL.limit.lower.imu.pit, -PITCH_MAX);
 }
 
 /*-------------------- Reference --------------------*/
@@ -143,7 +150,27 @@ void GimbalObserver(void)
  * @param[in]      none
  * @retval         none
  */
-void GimbalReference(void) {}
+void GimbalReference(void)
+{
+    float pit_pos, yaw_pos;
+#if TUNE_MODE
+    pit_pos = GenerateSinWave(0.5, 0, 5);
+    yaw_pos = GenerateSinWave(0.5, 0, 5);
+#else
+    if (GetRcType() == RC_TYPE_ET08A) {
+        pit_pos = (GetSbusCh(1) - ET08A_RC_CH_VALUE_OFFSET) /
+                  (ET08A_RC_CH_VALUE_MAX - ET08A_RC_CH_VALUE_MIN) * 2;
+        yaw_pos = (GetSbusCh(0) - ET08A_RC_CH_VALUE_OFFSET) /
+                  (ET08A_RC_CH_VALUE_MAX - ET08A_RC_CH_VALUE_MIN) * 2;
+    } else if (GetRcType() == RC_TYPE_ESP32_TRACKER) {
+        pit_pos = uint_to_float(GetSbusCh(1), -M_PI_2, M_PI_2, 11);
+        yaw_pos = uint_to_float(GetSbusCh(2), -M_PI_2, M_PI_2, 11);
+    }
+#endif
+    GIMBAL.ref.pit.pos =
+        MID(theta_format(pit_pos), GIMBAL.limit.lower.imu.pit, GIMBAL.limit.upper.imu.pit);
+    GIMBAL.ref.yaw.pos = theta_format(yaw_pos);
+}
 
 /*-------------------- Console --------------------*/
 
