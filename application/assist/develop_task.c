@@ -19,7 +19,6 @@ const Sbus_t * SBUS;
 const RC_ctrl_t * RC_CTRL;
 
 extern Ps2_s ps2;
-extern Chassis_s CHASSIS;
 
 // Ps2Button_t ps2_btn_select = {.last = false, .now = false};
 // Ps2Buttons_t ps2_btns = {0};
@@ -36,18 +35,6 @@ void develop_task(void const * pvParameters)
     SupCapInit(&p_sup_cap,1);
 
     while (1) {
-        GetSupCapMeasure(&p_sup_cap);
-
-        ModifyDebugDataPackage(0,CHASSIS.fdb.leg[0].joint.Phi1, "L_phi1");
-        ModifyDebugDataPackage(1,CHASSIS.fdb.leg[0].joint.Phi4, "L_phi4");
-        ModifyDebugDataPackage(2,CHASSIS.fdb.leg[0].rod.L0, "L_L0");
-        ModifyDebugDataPackage(3,CHASSIS.fdb.leg[0].rod.Theta, "L_Theta");
-        ModifyDebugDataPackage(4,CHASSIS.fdb.leg[1].joint.Phi1, "R_phi1");
-        ModifyDebugDataPackage(5,CHASSIS.fdb.leg[1].joint.Phi4, "R_phi4");
-        ModifyDebugDataPackage(6,CHASSIS.fdb.leg[1].rod.L0, "R_L0");
-        ModifyDebugDataPackage(7,CHASSIS.fdb.leg[1].rod.Theta, "R_Theta");
-        ModifyDebugDataPackage(8,CHASSIS.joint_motor[0].fdb.pos, "p0");
-        ModifyDebugDataPackage(9,CHASSIS.joint_motor[1].fdb.pos, "p1");
 
         vTaskDelay(1);
     }

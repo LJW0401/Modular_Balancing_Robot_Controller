@@ -109,9 +109,9 @@ void CanSendGimbalDataToBoard(uint8_t can, uint16_t target_id, uint16_t index)
     uint16_t std_id = CAN_STD_ID_PACK_BASE | CAN_STD_ID_Gimbal << TYPE_ID_OFFSET |
                       (target_id << TARGET_ID_OFFSET) | index;
 
-    float delta_yaw_mid = GetGimbalDeltaYawMid();
+    float delta_yaw_mid = 0.0f;
     bool yaw_motor_offline = true;
-    bool init_judge = GetGimbalInitJudgeReturn();
+    bool init_judge = false;
 
     SEND_CBC.gimbal_data.gimbal.packed_data.yaw = delta_yaw_mid;
     SEND_CBC.gimbal_data.gimbal.packed_data.offline = yaw_motor_offline;

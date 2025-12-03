@@ -191,9 +191,9 @@ void DataGimbalRenew()
 {
     Send_Data_Gimbal.time_stamp = HAL_GetTick();
 
-    Send_Data_Gimbal.data.yaw_motor_pos = GetGimbalDeltaYawMid();
+    Send_Data_Gimbal.data.yaw_motor_pos = 0.0f;
     Send_Data_Gimbal.data.yaw_motor_offline = true;
-    Send_Data_Gimbal.data.init_judge = GetGimbalInitJudgeReturn();
+    Send_Data_Gimbal.data.init_judge = false;
     append_CRC16_check_sum((uint8_t *)(&Send_Data_Gimbal), sizeof(Data_Gimbal_s));
 }
 
