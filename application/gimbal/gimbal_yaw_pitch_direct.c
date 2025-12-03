@@ -31,6 +31,8 @@
 
 Gimbal_s GIMBAL;
 
+Motor_s * motor_array[2];
+
 /*--------------------------------Internal functions---------------------------------------*/
 
 /*-------------------- Init --------------------*/
@@ -52,6 +54,9 @@ void GimbalInit(void)
     MotorInit(
         &GIMBAL.m_yaw, MOTOR_GIMBAL_YAW_ID, MOTOR_GIMBAL_YAW_CAN, MOTOR_GIMBAL_YAW_TYPE,
         MOTOR_GIMBAL_YAW_DIRECTION, MOTOR_GIMBAL_YAW_REDUCTION_RATIO, MOTOR_GIMBAL_YAW_MODE);
+
+    motor_array[0] = &GIMBAL.m_pit;
+    motor_array[1] = &GIMBAL.m_yaw;
 
     // 状态量初始化
     memset(&GIMBAL.fdb, 0, sizeof(GIMBAL.fdb));
@@ -107,7 +112,13 @@ void GimbalSetMode(void)
         return;
     }
 
-    GIMBAL.mode = GIMBAL_IMU;
+    if (GetRcType() == RC_TYPE_ET08A) {
+        if (GetSbusCh(4) == 0x0400) {
+            GIMBAL.mode = GIMBAL_IMU;
+        } else {
+            GIMBAL.mode = GIMBAL_SAFE;
+        }
+    }
 }
 /*-------------------- Observe --------------------*/
 
@@ -154,8 +165,8 @@ void GimbalReference(void)
 {
     float pit_pos, yaw_pos;
 #if TUNE_MODE
-    pit_pos = GenerateSinWave(0.5, 0, 5);
-    yaw_pos = GenerateSinWave(0.5, 0, 5);
+    pit_pos = GenerateSinWave(0.3, 0, 5);
+    yaw_pos = GenerateSinWave(0.3, 0, 5);
 #else
     if (GetRcType() == RC_TYPE_ET08A) {
         pit_pos = (GetSbusCh(1) - ET08A_RC_CH_VALUE_OFFSET) /
@@ -179,7 +190,23 @@ void GimbalReference(void)
  * @param[in]      none
  * @retval         none
  */
-void GimbalConsole(void) {}
+void GimbalConsole(void)
+{
+    if (GIMBAL.mode == GIMBAL_SAFE || GIMBAL.mode == GIMBAL_OFF) {
+        GIMBAL.cmd.pit.value = 0;
+        GIMBAL.cmd.yaw.value = 0;
+    } else if (GIMBAL.mode == GIMBAL_IMU || GIMBAL.mode == GIMBAL_ECD) {
+        // roll pid控制
+        // pitch pid控制
+        GIMBAL.ref.pit.vel = PID_calc(&GIMBAL.pid.pit.pos, GIMBAL.fdb.pit.pos, GIMBAL.ref.pit.pos);
+        GIMBAL.cmd.pit.value =
+            PID_calc(&GIMBAL.pid.pit.vel, GIMBAL.fdb.pit.vel, GIMBAL.ref.pit.vel);
+        // yaw pid控制
+        GIMBAL.ref.yaw.vel = PID_calc(&GIMBAL.pid.yaw.pos, GIMBAL.fdb.yaw.pos, GIMBAL.ref.yaw.pos);
+        GIMBAL.cmd.yaw.value =
+            PID_calc(&GIMBAL.pid.yaw.vel, GIMBAL.fdb.yaw.vel, GIMBAL.ref.yaw.vel);
+    }
+}
 
 /*-------------------- Cmd --------------------*/
 
@@ -188,6 +215,11 @@ void GimbalConsole(void) {}
  * @param[in]      none
  * @retval         none
  */
-void GimbalSendCmd(void) {}
+void GimbalSendCmd(void)
+{
+    // CanCmdDjiMotor(1,0x1FF,gimbal_direct.yaw.set.curr,gimbal_direct.pitch.set.curr,0,0);
+    // CanCmdDjiMotor(1, 0x1FF, GIMBAL.cmd.yaw.value, GIMBAL.cmd.pit.value, 0, 0);
+    // DjiMultipleControl(1, 2, motor_array);
+}
 
 #endif  // GIMBAL_YAW_PITCH
