@@ -166,7 +166,7 @@ void GimbalReference(void)
     float pit_pos, yaw_pos;
 #if TUNE_MODE
     pit_pos = GenerateSinWave(0.3, 0, 1);
-    yaw_pos = GenerateSinWave(0.1, 0, 5);
+    yaw_pos = GenerateSinWave(0.5, M_PI, 5);
 #else
     if (GetRcType() == RC_TYPE_ET08A) {
         pit_pos = (GetSbusCh(1) - ET08A_RC_CH_VALUE_OFFSET) /
@@ -196,13 +196,22 @@ void GimbalConsole(void)
         GIMBAL.cmd.pit.value = 0;
         GIMBAL.cmd.yaw.value = 0;
     } else if (GIMBAL.mode == GIMBAL_IMU || GIMBAL.mode == GIMBAL_ECD) {
+        float delta;
         // roll pid控制
         // pitch pid控制
         GIMBAL.ref.pit.vel = PID_calc(&GIMBAL.pid.pit.pos, GIMBAL.fdb.pit.pos, GIMBAL.ref.pit.pos);
         GIMBAL.cmd.pit.value =
             PID_calc(&GIMBAL.pid.pit.vel, GIMBAL.fdb.pit.vel, GIMBAL.ref.pit.vel);
+
         // yaw pid控制
-        GIMBAL.ref.yaw.vel = PID_calc(&GIMBAL.pid.yaw.pos, GIMBAL.fdb.yaw.pos, GIMBAL.ref.yaw.pos);
+        delta = GIMBAL.ref.yaw.pos - GIMBAL.fdb.yaw.pos;
+        if (delta > M_PI) {
+            delta -= 2.0f * M_PI;
+        } else if (delta < -M_PI) {
+            delta += 2.0f * M_PI;
+        }
+
+        GIMBAL.ref.yaw.vel = PID_calc(&GIMBAL.pid.yaw.pos, 0, delta);
         GIMBAL.cmd.yaw.value =
             PID_calc(&GIMBAL.pid.yaw.vel, GIMBAL.fdb.yaw.vel, GIMBAL.ref.yaw.vel);
     }
@@ -217,8 +226,8 @@ void GimbalConsole(void)
  */
 void GimbalSendCmd(void)
 {
-    // CanCmdDjiMotor(1,0x1FF,gimbal_direct.yaw.set.curr,gimbal_direct.pitch.set.curr,0,0);
-    // CanCmdDjiMotor(1, 0x1FF, GIMBAL.cmd.yaw.value, GIMBAL.cmd.pit.value, 0, 0);
+    GIMBAL.m_pit.set.value = GIMBAL.cmd.pit.value;
+    GIMBAL.m_yaw.set.value = GIMBAL.cmd.yaw.value;
     DjiMultipleControl(1, 2, motor_array);
 }
 
