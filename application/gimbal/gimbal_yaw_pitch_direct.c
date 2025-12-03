@@ -21,7 +21,8 @@
 
 #if (GIMBAL_TYPE == GIMBAL_YAW_PITCH_DIRECT)
 
-#define TUNE_MODE true
+#define TUNE_MODE false
+#define ENABLE_CMD true
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -118,6 +119,10 @@ void GimbalSetMode(void)
         } else {
             GIMBAL.mode = GIMBAL_SAFE;
         }
+    } else if (GetRcType() == RC_TYPE_ESP32_TRACKER) {
+        GIMBAL.mode = GIMBAL_IMU;
+    } else {
+        GIMBAL.mode = GIMBAL_SAFE;
     }
 }
 /*-------------------- Observe --------------------*/
@@ -175,7 +180,7 @@ void GimbalReference(void)
                   (ET08A_RC_CH_VALUE_MAX - ET08A_RC_CH_VALUE_MIN) * 2;
     } else if (GetRcType() == RC_TYPE_ESP32_TRACKER) {
         pit_pos = uint_to_float(GetSbusCh(1), -M_PI_2, M_PI_2, 11);
-        yaw_pos = uint_to_float(GetSbusCh(2), -M_PI_2, M_PI_2, 11);
+        yaw_pos = uint_to_float(GetSbusCh(2), -M_PI, M_PI, 11);
     }
 #endif
     GIMBAL.ref.pit.pos =
@@ -228,7 +233,9 @@ void GimbalSendCmd(void)
 {
     GIMBAL.m_pit.set.value = GIMBAL.cmd.pit.value;
     GIMBAL.m_yaw.set.value = GIMBAL.cmd.yaw.value;
+#if ENABLE_CMD
     DjiMultipleControl(1, 2, motor_array);
+#endif
 }
 
 #endif  // GIMBAL_YAW_PITCH
