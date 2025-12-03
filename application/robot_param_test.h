@@ -50,29 +50,30 @@
 
 // 云台PID参数
 // PIT位置环
-#define GIMBAL_PID_PIT_POS_KP      150.0f
+#define GIMBAL_PID_PIT_POS_KP      5.0f
 #define GIMBAL_PID_PIT_POS_KI      0.0f
-#define GIMBAL_PID_PIT_POS_KD      5.0f
-#define GIMBAL_PID_PIT_POS_MAX_IOUT  1000.0f
-#define GIMBAL_PID_PIT_POS_MAX_OUT   10000.0f
+#define GIMBAL_PID_PIT_POS_KD      0.0f
+#define GIMBAL_PID_PIT_POS_MAX_IOUT  0.0f
+#define GIMBAL_PID_PIT_POS_MAX_OUT   10.0f
 // PIT速度环
-#define GIMBAL_PID_PIT_VEL_KP      20.0f
-#define GIMBAL_PID_PIT_VEL_KI      0.0f
+#define GIMBAL_PID_PIT_VEL_KP      5000.0f
+#define GIMBAL_PID_PIT_VEL_KI      10.0f
 #define GIMBAL_PID_PIT_VEL_KD      0.0f
 #define GIMBAL_PID_PIT_VEL_MAX_IOUT  1000.0f
-#define GIMBAL_PID_PIT_VEL_MAX_OUT   5000.0f
+#define GIMBAL_PID_PIT_VEL_MAX_OUT   25000.0f
+
 // YAW位置环
-#define GIMBAL_PID_YAW_POS_KP      150.0f
+#define GIMBAL_PID_YAW_POS_KP      30.0f
 #define GIMBAL_PID_YAW_POS_KI      0.0f
-#define GIMBAL_PID_YAW_POS_KD      5.0f
-#define GIMBAL_PID_YAW_POS_MAX_IOUT  1000.0f
-#define GIMBAL_PID_YAW_POS_MAX_OUT   10000.0f
+#define GIMBAL_PID_YAW_POS_KD      0.0f
+#define GIMBAL_PID_YAW_POS_MAX_IOUT  0.0f
+#define GIMBAL_PID_YAW_POS_MAX_OUT   20.0f
 // YAW速度环
-#define GIMBAL_PID_YAW_VEL_KP      20.0f
-#define GIMBAL_PID_YAW_VEL_KI      0.0f
+#define GIMBAL_PID_YAW_VEL_KP      10000.0f
+#define GIMBAL_PID_YAW_VEL_KI      100.0f
 #define GIMBAL_PID_YAW_VEL_KD      0.0f
-#define GIMBAL_PID_YAW_VEL_MAX_IOUT  1000.0f
-#define GIMBAL_PID_YAW_VEL_MAX_OUT   5000.0f
+#define GIMBAL_PID_YAW_VEL_MAX_IOUT  5000.0f
+#define GIMBAL_PID_YAW_VEL_MAX_OUT   25000.0f
 
 // clang-format on
 #endif /* INCLUDED_ROBOT_PARAM_H */

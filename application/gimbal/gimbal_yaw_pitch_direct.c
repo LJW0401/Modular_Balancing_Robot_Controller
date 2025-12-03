@@ -165,8 +165,8 @@ void GimbalReference(void)
 {
     float pit_pos, yaw_pos;
 #if TUNE_MODE
-    pit_pos = GenerateSinWave(0.3, 0, 5);
-    yaw_pos = GenerateSinWave(0.3, 0, 5);
+    pit_pos = GenerateSinWave(0.3, 0, 3);
+    yaw_pos = GenerateSinWave(0.1, 0, 5);
 #else
     if (GetRcType() == RC_TYPE_ET08A) {
         pit_pos = (GetSbusCh(1) - ET08A_RC_CH_VALUE_OFFSET) /
@@ -218,7 +218,7 @@ void GimbalConsole(void)
 void GimbalSendCmd(void)
 {
     // CanCmdDjiMotor(1,0x1FF,gimbal_direct.yaw.set.curr,gimbal_direct.pitch.set.curr,0,0);
-    // CanCmdDjiMotor(1, 0x1FF, GIMBAL.cmd.yaw.value, GIMBAL.cmd.pit.value, 0, 0);
+    CanCmdDjiMotor(1, 0x1FF, GIMBAL.cmd.yaw.value, GIMBAL.cmd.pit.value, 0, 0);
     // DjiMultipleControl(1, 2, motor_array);
 }
 
