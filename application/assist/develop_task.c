@@ -33,6 +33,16 @@ void develop_task(void const * pvParameters)
     SupCapInit(&p_sup_cap,1);
 
     while (1) {
+        // ModifyDebugDataPackage(0,, "");
+        // ModifyDebugDataPackage(1,, "");
+        // ModifyDebugDataPackage(2,, "");
+        // ModifyDebugDataPackage(3,, "");
+        // ModifyDebugDataPackage(4,, "");
+        // ModifyDebugDataPackage(5,, "");
+        // ModifyDebugDataPackage(6,, "");
+        // ModifyDebugDataPackage(7,, "");
+        // ModifyDebugDataPackage(8,, "");
+        // ModifyDebugDataPackage(9,, "");
 
         vTaskDelay(1);
     }

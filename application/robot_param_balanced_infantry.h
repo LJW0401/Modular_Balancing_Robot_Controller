@@ -25,13 +25,12 @@
 #define CHASSIS_CONTROL_TIME_S (CHASSIS_CONTROL_TIME_MS / 1000.0f)   // 底盘任务控制间隔
 
 // 底盘的遥控器相关宏定义 ---------------------
-#define CHASSIS_MODE_CHANNEL   0  // 选择底盘状态 开关通道号
-#define CHASSIS_X_CHANNEL      3  // 前后的遥控器通道号码
-#define CHASSIS_Y_CHANNEL      2  // 左右的遥控器通道号码
-#define CHASSIS_WZ_CHANNEL     2  // 旋转的遥控器通道号码
-#define CHASSIS_ANGLE_CHANNEL  4  // 腿摆角的遥控器通道号码
-#define CHASSIS_LENGTH_CHANNEL 4  // 腿长的遥控器通道号码
-#define CHASSIS_ROLL_CHANNEL   4  // ROLL角的遥控器通道号码
+#define CHASSIS_MODE_CHANNEL   5  // 选择底盘状态 开关通道号
+#define CHASSIS_X_CHANNEL      2  // 前后的遥控器通道号码
+#define CHASSIS_WZ_CHANNEL     3  // 旋转的遥控器通道号码
+#define CHASSIS_YAW_CHANNEL  CHASSIS_WZ_CHANNEL  // 腿摆角的遥控器通道号码
+#define CHASSIS_LENGTH_CHANNEL 7  // 腿长的遥控器通道号码
+#define CHASSIS_ROLL_CHANNEL   0  // ROLL角的遥控器通道号码
 #define CHASSIS_RC_DEADLINE    20 // 摇杆死区
 
 // deadzone parameters ---------------------

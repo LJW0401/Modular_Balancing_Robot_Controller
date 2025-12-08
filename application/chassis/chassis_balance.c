@@ -157,8 +157,7 @@ void ChassisPublish(void) { Publish(&CHASSIS.fdb.speed_vector, CHASSIS_FDB_SPEED
  */
 void ChassisInit(void)
 {
-    CHASSIS.rc = get_remote_control_point();  // 获取遥控器指针
-    CHASSIS.imu = Subscribe(IMU_NAME);        // 获取IMU数据指针
+    CHASSIS.imu = Subscribe(IMU_NAME);  // 获取IMU数据指针
     /*-------------------- 初始化状态转移矩阵 --------------------*/
     TRANSITION_MATRIX[NORMAL_STEP] = NORMAL_STEP;
     TRANSITION_MATRIX[JUMP_STEP_SQUST] = JUMP_STEP_JUMP;
@@ -290,7 +289,7 @@ void ChassisInit(void)
  */
 void ChassisHandleException(void)
 {
-    if (GetRcOffline()) {
+    if (GetSbusOffline()) {
         CHASSIS.error_code |= DBUS_ERROR_OFFSET;
     } else {
         CHASSIS.error_code &= ~DBUS_ERROR_OFFSET;
@@ -415,24 +414,16 @@ void ChassisSetMode(void)
         }
     }
 #endif
-
-    if (switch_is_up(CHASSIS.rc->rc.s[CHASSIS_MODE_CHANNEL])) {
-        // CHASSIS.mode = CHASSIS_FREE;
-        // CHASSIS.mode = CHASSIS_SAFE;
-        CHASSIS.mode = CHASSIS_FOLLOW_GIMBAL_YAW;
-    } else if (switch_is_mid(CHASSIS.rc->rc.s[CHASSIS_MODE_CHANNEL])) {
-        CHASSIS.mode = CHASSIS_FOLLOW_GIMBAL_YAW;
-        // CHASSIS.mode = CHASSIS_CALIBRATE;
-    } else if (switch_is_down(CHASSIS.rc->rc.s[CHASSIS_MODE_CHANNEL])) {
-        // 在安全模式时，遥控器摇杆打成左下，右上进入脱困模式
-        if (CHASSIS.rc->rc.ch[0] > RC_OFF_HOOK_VALUE_HOLE &&
-            CHASSIS.rc->rc.ch[1] > RC_OFF_HOOK_VALUE_HOLE &&
-            CHASSIS.rc->rc.ch[2] < -RC_OFF_HOOK_VALUE_HOLE &&
-            CHASSIS.rc->rc.ch[3] < -RC_OFF_HOOK_VALUE_HOLE) {
-            CHASSIS.mode = CHASSIS_OFF_HOOK;
-        } else {
+    if (CHASSIS.rc_type == RC_TYPE_ET08A) {
+        if (GetSbusCh(CHASSIS_MODE_CHANNEL) < ET08A_RC_CH_VALUE_OFFSET) {
+            CHASSIS.mode = CHASSIS_SAFE;
+        } else if (GetSbusCh(CHASSIS_MODE_CHANNEL) == ET08A_RC_CH_VALUE_OFFSET) {
+            CHASSIS.mode = CHASSIS_FOLLOW_IMU;
+        } else if (GetSbusCh(CHASSIS_MODE_CHANNEL) > ET08A_RC_CH_VALUE_OFFSET) {
             CHASSIS.mode = CHASSIS_SAFE;
         }
+    } else {
+        CHASSIS.mode = CHASSIS_SAFE;
     }
 }
 #endif
@@ -467,6 +458,8 @@ void ChassisObserver(void)
 {
     CHASSIS.duration = xTaskGetTickCount() - CHASSIS.last_time;
     CHASSIS.last_time = xTaskGetTickCount();
+
+    CHASSIS.rc_type = GetRcType();
 
 #if ENABLE_EXHIBITION_MODE
     UpdatePs2Buttons(&ps2_btns);
@@ -697,7 +690,7 @@ static void UpdateStepStatus(void)
     CHASSIS.step_time += CHASSIS.duration;
 
     if (CHASSIS.mode == CHASSIS_CUSTOM) {
-        if (0 && (GetDt7RcCh(DT7_CH_RH) < -0.9f)) {  // 遥控器左侧水平摇杆打到左边切换至跳跃状态
+        if (0 && (GetSbusCh(DT7_CH_RH) < -0.9f)) {  // 遥控器左侧水平摇杆打到左边切换至跳跃状态
             CHASSIS.step_time = 0;
             CHASSIS.step = JUMP_STEP_SQUST;
         } else if (CHASSIS.step == JUMP_STEP_SQUST) {  // 跳跃——蹲下蓄力状态
@@ -888,6 +881,9 @@ void ChassisReference(void)
     }
 }
 #else
+
+static void Et08aRef(void);
+
 /**
  * @brief          更新目标量
  * @param[in]      none
@@ -895,20 +891,38 @@ void ChassisReference(void)
  */
 void ChassisReference(void)
 {
-    int16_t rc_x = 0, rc_wz = 0;
-    int16_t rc_length = 0, rc_angle = 0;
-    int16_t rc_roll = 0;
-    rc_deadband_limit(CHASSIS.rc->rc.ch[CHASSIS_X_CHANNEL], rc_x, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(CHASSIS.rc->rc.ch[CHASSIS_WZ_CHANNEL], rc_wz, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(CHASSIS.rc->rc.ch[CHASSIS_LENGTH_CHANNEL], rc_length, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(CHASSIS.rc->rc.ch[CHASSIS_ANGLE_CHANNEL], rc_angle, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(CHASSIS.rc->rc.ch[CHASSIS_ROLL_CHANNEL], rc_roll, CHASSIS_RC_DEADLINE);
+    switch (CHASSIS.rc_type) {
+        case RC_TYPE_ET08A:
+            Et08aRef();
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void Et08aRef()
+{
+    int16_t rc_x = GetSbusCh(CHASSIS_X_CHANNEL) - ET08A_RC_CH_VALUE_OFFSET;
+    int16_t rc_wz = GetSbusCh(CHASSIS_WZ_CHANNEL) - ET08A_RC_CH_VALUE_OFFSET;
+    int16_t rc_length = GetSbusCh(CHASSIS_LENGTH_CHANNEL) - ET08A_RC_CH_VALUE_OFFSET;
+    int16_t rc_yaw = GetSbusCh(CHASSIS_YAW_CHANNEL) - ET08A_RC_CH_VALUE_OFFSET;
+    int16_t rc_roll = GetSbusCh(CHASSIS_ROLL_CHANNEL) - ET08A_RC_CH_VALUE_OFFSET;
+
+    rc_deadband_limit(rc_x, rc_x, CHASSIS_RC_DEADLINE);
+    rc_deadband_limit(rc_wz, rc_wz, CHASSIS_RC_DEADLINE);
+    rc_deadband_limit(rc_length, rc_length, CHASSIS_RC_DEADLINE);
+    rc_deadband_limit(rc_yaw, rc_yaw, CHASSIS_RC_DEADLINE);
+    rc_deadband_limit(rc_roll, rc_roll, CHASSIS_RC_DEADLINE);
+
+#define RC_TO_ONE (1 / 670.0f)
 
     // 计算速度向量
     ChassisSpeedVector_t v_set = {0.0f, 0.0f, 0.0f};
     v_set.vx = rc_x * RC_TO_ONE * MAX_SPEED_VECTOR_VX;
     v_set.vy = 0;
     v_set.wz = -rc_wz * RC_TO_ONE * MAX_SPEED_VECTOR_WZ;
+
     switch (CHASSIS.mode) {
         case CHASSIS_FREE: {  // 底盘自由模式下，控制量为底盘坐标系下的速度
             CHASSIS.ref.speed_vector.vx = v_set.vx;
@@ -937,6 +951,23 @@ void ChassisReference(void)
                 }
             }
         } break;
+
+        case CHASSIS_FOLLOW_IMU: {
+            float ref_yaw = theta_format(rc_yaw * RC_TO_ONE * M_PI);
+            float delta_yaw = ref_yaw - CHASSIS.fdb.body.yaw;
+
+            if (delta_yaw > M_PI) {
+                delta_yaw -= 2.0f * M_PI;
+            } else if (delta_yaw < -M_PI) {
+                delta_yaw += 2.0f * M_PI;
+            }
+
+            CHASSIS.ref.speed_vector.vx = v_set.vx * cosf(delta_yaw);
+            CHASSIS.ref.speed_vector.vy = 0;
+            CHASSIS.ref.speed_vector.wz =
+                PID_calc(&CHASSIS.pid.chassis_follow_gimbal, -delta_yaw, 0);
+        } break;
+
         case CHASSIS_AUTO: {  // 底盘自动模式，控制量为云台坐标系下的速度，需要进行坐标转换
             CHASSIS.ref.speed_vector.vx = v_set.vx;
             CHASSIS.ref.speed_vector.vy = 0;
@@ -968,53 +999,34 @@ void ChassisReference(void)
     // clang-format on
 
     // 腿部控制
-    static float angle = M_PI_2;
     static float length = 0.12f;
     switch (CHASSIS.mode) {
         case CHASSIS_STAND_UP: {
             length = 0.12f;
-            angle = M_PI_2;
         } break;
         case CHASSIS_DEBUG: {
             length = 0.12f;
-            CHASSIS.ref.leg_state[0].theta = rc_angle * RC_TO_ONE * 0.3f;
-            CHASSIS.ref.leg_state[1].theta = rc_angle * RC_TO_ONE * 0.3f;
         }
         case CHASSIS_FOLLOW_GIMBAL_YAW:
+        case CHASSIS_FOLLOW_IMU:
         case CHASSIS_CUSTOM:
         case CHASSIS_POS_DEBUG: {
-            angle = M_PI_2 + rc_angle * RC_TO_ONE * 0.3f;
-#if (__RC_TYPE == RC_ET08A)
-            float delta_l = (get_sbus_point()->ch[7] - ET08A_RC_CH_VALUE_OFFSET) / 670.0f * 0.15f;
-            length = 0.24f + delta_l + rc_length * 0.00000001f;
-#else
-            length = 0.24f + rc_length * 0.00000001f;
-#endif
-
-            if (CHASSIS.step == JUMP_STEP_SQUST) {
-                length = MIN_LEG_LENGTH;
-            } else if (CHASSIS.step == JUMP_STEP_JUMP) {
-                length = MAX_LEG_LENGTH;
-            } else if (CHASSIS.step == JUMP_STEP_RECOVERY) {
-                length = MIN_LEG_LENGTH + 0.05f;
-            }
+            length = 0.24f + rc_length * RC_TO_ONE * 0.15f;
         } break;
         case CHASSIS_FREE: {
         } break;
         default: {
-            angle = M_PI_2;
             length = 0.12f;
         }
     }
     length = fp32_constrain(length, MIN_LEG_LENGTH, MAX_LEG_LENGTH);
-    angle = fp32_constrain(angle, MIN_LEG_ANGLE, MAX_LEG_ANGLE);
 
     CHASSIS.ref.rod_L0[0] = length;
     CHASSIS.ref.rod_L0[1] = length;
-    CHASSIS.ref.rod_Angle[0] = angle;
-    CHASSIS.ref.rod_Angle[1] = angle;
 
     CHASSIS.ref.body.roll = fp32_constrain(-rc_roll * RC_TO_ONE * MAX_ROLL, MIN_ROLL, MAX_ROLL);
+    CHASSIS.ref.body.roll = 0.0f;  // ROLL控制暂时关闭
+#undef RC_TO_ONE
 }
 #endif
 
@@ -1064,6 +1076,7 @@ void ChassisConsole(void)
             ConsoleOffHook();
         } break;
         case CHASSIS_FOLLOW_GIMBAL_YAW:
+        case CHASSIS_FOLLOW_IMU:
         case CHASSIS_CUSTOM:
         case CHASSIS_MOONWALK:
         case CHASSIS_MOVE:
@@ -1454,6 +1467,7 @@ static void SendJointMotorCmd(void)
 
         switch (CHASSIS.mode) {
             case CHASSIS_FOLLOW_GIMBAL_YAW:
+            case CHASSIS_FOLLOW_IMU:
             case CHASSIS_DEBUG:
             case CHASSIS_CUSTOM:
             case CHASSIS_MOONWALK:
@@ -1535,6 +1549,7 @@ static void SendWheelMotorCmd(void)
 {
     switch (CHASSIS.mode) {
         case CHASSIS_FOLLOW_GIMBAL_YAW:
+        case CHASSIS_FOLLOW_IMU:
         case CHASSIS_CUSTOM:
         case CHASSIS_MOONWALK:
         case CHASSIS_MOVE:

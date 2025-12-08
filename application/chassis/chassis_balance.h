@@ -66,6 +66,7 @@ typedef enum {
     CHASSIS_STAND_UP,           // 底盘起立，从倒地状态到站立状态的中间过程
     CHASSIS_CALIBRATE,          // 底盘校准
     CHASSIS_FOLLOW_GIMBAL_YAW,  // 底盘跟随云台（运动方向为云台坐标系方向，需进行坐标转换）
+    CHASSIS_FOLLOW_IMU,  // 底盘跟随IMU
     CHASSIS_FLOATING,           // 底盘悬空状态
     CHASSIS_CRASHING,           // 底盘接地状态，进行缓冲
     CHASSIS_FREE,               // 底盘不跟随云台
@@ -254,7 +255,7 @@ typedef struct LPF
  */
 typedef struct
 {
-    const RC_ctrl_t * rc;  // 底盘使用的遥控器指针
+    RC_Type_e rc_type;  // 遥控器类型
     const Imu_t * imu;     // imu数据
     ChassisMode_e mode;    // 底盘模式
     uint8_t error_code;    // 底盘错误代码
