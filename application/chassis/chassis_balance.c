@@ -414,16 +414,23 @@ void ChassisSetMode(void)
         }
     }
 #endif
-    if (CHASSIS.rc_type == RC_TYPE_ET08A) {
-        if (GetSbusCh(CHASSIS_MODE_CHANNEL) < ET08A_RC_CH_VALUE_OFFSET) {
-            CHASSIS.mode = CHASSIS_SAFE;
-        } else if (GetSbusCh(CHASSIS_MODE_CHANNEL) == ET08A_RC_CH_VALUE_OFFSET) {
+    switch (CHASSIS.rc_type) {
+        case RC_TYPE_ET08A: {
+            if (GetSbusCh(CHASSIS_MODE_CHANNEL) < ET08A_RC_CH_VALUE_OFFSET) {
+                CHASSIS.mode = CHASSIS_SAFE;
+            } else if (GetSbusCh(CHASSIS_MODE_CHANNEL) == ET08A_RC_CH_VALUE_OFFSET) {
+                CHASSIS.mode = CHASSIS_FOLLOW_IMU;
+            } else if (GetSbusCh(CHASSIS_MODE_CHANNEL) > ET08A_RC_CH_VALUE_OFFSET) {
+                CHASSIS.mode = CHASSIS_SAFE;
+            }
+        } break;
+
+        case RC_TYPE_ESP32_TRACKER: {
             CHASSIS.mode = CHASSIS_FOLLOW_IMU;
-        } else if (GetSbusCh(CHASSIS_MODE_CHANNEL) > ET08A_RC_CH_VALUE_OFFSET) {
+        } break;
+
+        default:
             CHASSIS.mode = CHASSIS_SAFE;
-        }
-    } else {
-        CHASSIS.mode = CHASSIS_SAFE;
     }
 }
 #endif
@@ -883,6 +890,7 @@ void ChassisReference(void)
 #else
 
 static void Et08aRef(void);
+static void ESP32TrackerRef(void);
 
 /**
  * @brief          更新目标量
@@ -894,6 +902,10 @@ void ChassisReference(void)
     switch (CHASSIS.rc_type) {
         case RC_TYPE_ET08A:
             Et08aRef();
+            break;
+
+        case RC_TYPE_ESP32_TRACKER:
+            ESP32TrackerRef();
             break;
 
         default:
@@ -1028,6 +1040,44 @@ static void Et08aRef()
     CHASSIS.ref.body.roll = 0.0f;  // ROLL控制暂时关闭
 #undef RC_TO_ONE
 }
+
+static void ESP32TrackerRef(void)
+{
+    float ref_yaw = uint_to_float(GetSbusCh(5), -M_PI, M_PI, 11);
+    float delta_yaw = ref_yaw - CHASSIS.fdb.body.yaw;
+    
+    ModifyDebugDataPackage(8, ref_yaw, "yaw");
+
+    if (delta_yaw > M_PI) {
+        delta_yaw -= 2.0f * M_PI;
+    } else if (delta_yaw < -M_PI) {
+        delta_yaw += 2.0f * M_PI;
+    }
+
+    float vx = uint_to_float(GetSbusCh(6), -1.0f, 1.0f, 11);
+    CHASSIS.ref.speed_vector.vx = vx;
+    CHASSIS.ref.speed_vector.vy = 0;
+    CHASSIS.ref.speed_vector.wz = PID_calc(&CHASSIS.pid.chassis_follow_gimbal, -delta_yaw, 0);
+
+    // 计算期望状态
+    // clang-format off
+    for (uint8_t i = 0; i < 2; i++) {
+        CHASSIS.ref.leg_state[i].theta     =  0;
+        CHASSIS.ref.leg_state[i].theta_dot =  0;
+        CHASSIS.ref.leg_state[i].x         =  0;//CHASSIS.ref.speed_vector.vx * CHASSIS_CONTROL_TIME_S * X_ADD_RATIO;
+        CHASSIS.ref.leg_state[i].x_dot     =  CHASSIS.ref.speed_vector.vx;
+        CHASSIS.ref.leg_state[i].phi       =  0;
+        CHASSIS.ref.leg_state[i].phi_dot   =  0;
+    }
+    // clang-format on
+
+    // 腿长和roll
+    CHASSIS.ref.rod_L0[0] = 0.24f;
+    CHASSIS.ref.rod_L0[1] = 0.24f;
+
+    CHASSIS.ref.body.roll = 0.0f;
+}
+
 #endif
 
 /******************************************************************/
